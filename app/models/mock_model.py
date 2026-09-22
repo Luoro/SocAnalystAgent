@@ -25,34 +25,164 @@ class MockModel(AIModel):
                 {
                     "action": "final",
                     "answer": (
-                        "The SHA256 hash was calculated "
-                        f"successfully:\n{tool_result}"
+                        "The tool executed successfully.\n\n"
+                        f"Result:\n{tool_result}"
                     )
                 }
             )
 
         # -------------------------
-        # HASH TOOL
+        # IP REPUTATION
+        # -------------------------
+
+        if (
+            "ip reputation" in prompt_lower
+            or "reputation of" in prompt_lower
+            or "reputation for" in prompt_lower
+        ):
+
+            match = re.search(
+                r"\b(?:\d{1,3}\.){3}\d{1,3}\b",
+                prompt
+            )
+
+            if match:
+
+                return json.dumps(
+                    {
+                        "action": "tool",
+                        "tool": "check_ip_reputation",
+                        "arguments": {
+                            "ip": match.group(0)
+                        }
+                    }
+                )
+
+        # -------------------------
+        # DOMAIN RESOLUTION
+        # -------------------------
+
+        if (
+            "resolve domain" in prompt_lower
+            or "resolve" in prompt_lower
+            or "dns" in prompt_lower
+        ):
+
+            match = re.search(
+                r"\b(?:[a-zA-Z0-9-]+\.)+"
+                r"[a-zA-Z]{2,}\b",
+                prompt
+            )
+
+            if match:
+
+                return json.dumps(
+                    {
+                        "action": "tool",
+                        "tool": "resolve_domain",
+                        "arguments": {
+                            "domain": match.group(0)
+                        }
+                    }
+                )
+
+        # -------------------------
+        # MITRE
+        # -------------------------
+
+        if (
+            "mitre" in prompt_lower
+            or "attack technique" in prompt_lower
+        ):
+
+            technique = prompt.strip()
+
+            return json.dumps(
+                {
+                    "action": "tool",
+                    "tool": "search_mitre_technique",
+                    "arguments": {
+                        "technique": technique
+                    }
+                }
+            )
+
+        # -------------------------
+        # FILE HASH
+        # -------------------------
+
+        if (
+            "file hash" in prompt_lower
+            or "calculate file hash" in prompt_lower
+        ):
+
+            return json.dumps(
+                {
+                    "action": "tool",
+                    "tool": "calculate_file_hash",
+                    "arguments": {
+                        "file_path": "sample.txt",
+                        "algorithm": "sha256"
+                    }
+                }
+            )
+
+        # -------------------------
+        # PCAP
+        # -------------------------
+
+        if (
+            "pcap" in prompt_lower
+            or "packet capture" in prompt_lower
+        ):
+
+            return json.dumps(
+                {
+                    "action": "tool",
+                    "tool": "analyze_pcap",
+                    "arguments": {
+                        "file_path": "capture.pcap"
+                    }
+                }
+            )
+
+        # -------------------------
+        # LOG SEARCH
+        # -------------------------
+
+        if (
+            "search logs" in prompt_lower
+            or "search the logs" in prompt_lower
+        ):
+
+            return json.dumps(
+                {
+                    "action": "tool",
+                    "tool": "search_logs",
+                    "arguments": {
+                        "query": prompt
+                    }
+                }
+            )
+
+        # -------------------------
+        # HASH TEXT
         # -------------------------
 
         if "hash" in prompt_lower:
-
-            text_to_hash = self._extract_hash_text(
-                prompt
-            )
 
             return json.dumps(
                 {
                     "action": "tool",
                     "tool": "calculate_sha256",
                     "arguments": {
-                        "text": text_to_hash
+                        "text": "hello"
                     }
                 }
             )
 
         # -------------------------
-        # RAG REQUEST
+        # RAG
         # -------------------------
 
         if (
@@ -68,7 +198,7 @@ class MockModel(AIModel):
             )
 
         # -------------------------
-        # FINAL RESPONSE AFTER RAG
+        # FINAL AFTER RAG
         # -------------------------
 
         if "relevant knowledge" in prompt_lower:
@@ -100,32 +230,3 @@ class MockModel(AIModel):
                 )
             }
         )
-
-    # -------------------------
-    # HASH TEXT EXTRACTION
-    # -------------------------
-
-    def _extract_hash_text(
-        self,
-        prompt: str
-    ) -> str:
-
-        patterns = [
-            r"hash(?:\s+the)?\s+(?:text\s+)?['\"](.+?)['\"]",
-            r"hash(?:\s+the)?\s+(?:text\s+)?(.+?)\s*$",
-            r"sha256\s+(?:of|for)\s+['\"](.+?)['\"]",
-            r"sha256\s+(?:of|for)\s+(.+?)\s*$",
-        ]
-
-        for pattern in patterns:
-
-            match = re.search(
-                pattern,
-                prompt,
-                re.IGNORECASE
-            )
-
-            if match:
-                return match.group(1).strip()
-
-        return "hello"
