@@ -7,7 +7,6 @@ def execute_tool(
 ):
 
     if tool_name not in TOOLS:
-
         raise ValueError(
             f"Unknown tool: {tool_name}"
         )
