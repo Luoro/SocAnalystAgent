@@ -5,3 +5,7 @@ openai
 anthropic
 google-genai
 python-dotenv
+
+requests
+elasticsearch
+scapy
